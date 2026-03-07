@@ -4,6 +4,7 @@ import Analytics from "@/pages/Analytics";
 import CaseDetail from "@/pages/CaseDetail";
 import CasesList from "@/pages/CasesList";
 import Dashboard from "@/pages/Dashboard";
+import Login from "@/pages/Login";
 import NewAppraisal from "@/pages/NewAppraisal";
 import SettingsPage from "@/pages/Settings";
 import {
@@ -22,11 +23,17 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
+  Loader2,
+  LogOut,
   Plus,
   Settings,
   User,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  InternetIdentityProvider,
+  useInternetIdentity,
+} from "./hooks/useInternetIdentity";
 
 // ── Router setup ──────────────────────────────────────────────────────────────
 
@@ -258,11 +265,21 @@ function Sidebar({
 
 // ── Header ────────────────────────────────────────────────────────────────────
 
+function shortenPrincipal(principal: string): string {
+  if (principal.length <= 12) return principal;
+  return `${principal.slice(0, 5)}...${principal.slice(-3)}`;
+}
+
 function Header({
   sidebarCollapsed: _sidebarCollapsed,
 }: { sidebarCollapsed: boolean }) {
   const routerState = useRouterState();
   const path = routerState.location.pathname;
+  const { identity, clear } = useInternetIdentity();
+
+  const principalText = identity
+    ? shortenPrincipal(identity.getPrincipal().toText())
+    : "Anonymous";
 
   function getBreadcrumb(): string {
     if (path === "/") return "Dashboard";
@@ -277,17 +294,16 @@ function Header({
   return (
     <header className="h-14 border-b border-border bg-background/80 backdrop-blur-sm flex items-center justify-between px-5 flex-shrink-0">
       <div className="flex items-center gap-3">
-        {/* Mobile menu hint when sidebar is very narrow */}
         <span className="text-sm text-muted-foreground font-body">
           {getBreadcrumb()}
         </span>
       </div>
 
       {/* User info */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <div className="hidden sm:flex flex-col items-end">
-          <span className="text-sm font-medium text-foreground leading-tight">
-            Priya Sharma
+          <span className="text-sm font-medium text-foreground leading-tight font-mono">
+            {principalText}
           </span>
           <span className="text-xs text-muted-foreground leading-tight">
             Credit Manager
@@ -296,6 +312,15 @@ function Header({
         <div className="w-8 h-8 rounded-md bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0">
           <User className="w-4 h-4 text-primary" />
         </div>
+        <button
+          type="button"
+          data-ocid="header.signout_button"
+          onClick={clear}
+          title="Sign out"
+          className="w-8 h-8 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent hover:border-border transition-all duration-150"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+        </button>
       </div>
     </header>
   );
@@ -335,8 +360,41 @@ function AppShell() {
   );
 }
 
+// ── Auth Gate ─────────────────────────────────────────────────────────────────
+
+function AuthGate() {
+  const { identity, isInitializing } = useInternetIdentity();
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-8 h-8 rounded-md bg-primary/20 border border-primary/30 flex items-center justify-center">
+            <Activity className="w-4 h-4 text-primary" />
+          </div>
+          <span className="font-display font-bold text-lg text-foreground tracking-tight">
+            Credit<span className="text-primary">IQ</span>
+          </span>
+        </div>
+        <Loader2 className="w-6 h-6 text-primary animate-spin" />
+        <p className="text-sm text-muted-foreground">Initializing...</p>
+      </div>
+    );
+  }
+
+  if (!identity) {
+    return <Login />;
+  }
+
+  return <RouterProvider router={router} />;
+}
+
 // ── Root component ────────────────────────────────────────────────────────────
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <InternetIdentityProvider>
+      <AuthGate />
+    </InternetIdentityProvider>
+  );
 }

@@ -1,60 +1,26 @@
-# CreditIQ — AI-Powered Corporate Credit Appraisal Engine
+# CreditIQ
 
 ## Current State
-New project. No existing backend or frontend code.
+Full-stack credit appraisal app with a React frontend (dashboard, cases, analytics, settings, new appraisal). The authorization component is installed and the `useInternetIdentity` hook exists, but the app shell (`App.tsx`) never checks authentication — all routes are accessible without logging in.
 
 ## Requested Changes (Diff)
 
 ### Add
-- **Company Profile Setup**: Form to enter borrower company details (name, CIN, sector, turnover, loan amount requested, tenure).
-- **Data Ingestion Dashboard**: Multi-tab interface showing ingestion status for all data source categories:
-  - Structured Data: GST filings, ITRs, Bank Statements (upload or simulated)
-  - Unstructured Data: Annual Reports, Financial Statements, Board Minutes, Rating Reports, Shareholding Pattern (file upload)
-  - External Intelligence: News/Sector trends, MCA filings, Legal disputes (simulated fetch)
-  - Primary Insights: Site visit observations, Management interview notes (text input)
-- **AI Analysis Engine**: Simulated multi-stage analysis pipeline with progress visualization:
-  1. Data Validation & Normalization
-  2. Financial Ratio Computation (liquidity, leverage, coverage, profitability)
-  3. Unstructured Text Analysis (sentiment, red flags, early warning signals)
-  4. External Intelligence Synthesis
-  5. ML-based Credit Scoring
-- **Credit Score Card**: Visual scorecard showing:
-  - Overall credit score (0-100) with risk band (AAA, AA, A, BBB, BB, B, C, D)
-  - Sub-scores: Financial Health, Management Quality, Industry Outlook, Compliance, Legal Risk
-  - Key financial ratios (DSCR, Current Ratio, Debt/Equity, Interest Coverage, ROE)
-  - Early Warning Signals flagged (if any)
-- **Comprehensive Credit Appraisal Memo (CAM)**: Auto-generated structured report including:
-  - Executive Summary with final recommendation (Approve / Conditional Approve / Reject)
-  - Recommended loan limit (in INR Cr)
-  - Risk premium / suggested interest rate band
-  - Detailed section-by-section findings
-  - Risk mitigation conditions
-  - Comparable industry benchmarks
-- **Cases Management**: List of all past credit appraisal cases with status, score, and recommendation
-- **Risk Analytics Dashboard**: Aggregate charts — score distribution, sector-wise risk, approval rates
+- A branded **Login page** (`pages/Login.tsx`) shown when the user is not authenticated. It should feature the CreditIQ logo, a short tagline about AI-powered credit decisioning, and a prominent "Sign In with Internet Identity" button that calls the `login()` function from `useInternetIdentity`.
+- An **auth gate** in `App.tsx`: wrap the router/app shell in `InternetIdentityProvider`, and before rendering the main `AppShell`, check if the user is authenticated. If not, show the `Login` page. While the auth client is initializing, show a full-screen loading spinner.
+- A **sign-out button** in the sidebar or header that calls `clear()` from `useInternetIdentity`.
 
 ### Modify
-Nothing (new project).
+- `App.tsx`: import `InternetIdentityProvider` and `useInternetIdentity`, wrap everything in the provider, add auth-gate logic before rendering the router.
+- Header/sidebar: replace the hardcoded "Priya Sharma / Credit Manager" placeholder with the authenticated principal (shortened) and a sign-out button.
 
 ### Remove
-Nothing (new project).
+- Nothing removed.
 
 ## Implementation Plan
-
-**Backend (Motoko):**
-- `CreditCase` record: id, company name, CIN, sector, requested amount, tenure, status, created date
-- `DataIngestionStatus` record: per-source ingestion state (pending/processing/done/error)
-- `CreditScore` record: overall score, sub-scores (financial, management, industry, compliance, legal), risk band, DSCR, current ratio, debt/equity, interest coverage, ROE
-- `EarlyWarningSignal` record: type, severity, description
-- `CAMReport` record: recommendation, loan limit, risk premium, interest rate band, executive summary, section findings, conditions
-- CRUD for cases: createCase, getCase, listCases, updateCaseStatus
-- Simulated analysis trigger: runAnalysis(caseId) — sets scores and generates CAM with realistic mock data
-- seedData: 3-5 pre-populated example cases at various stages
-
-**Frontend:**
-- App shell with sidebar navigation: Dashboard, New Appraisal, Cases, Analytics
-- New Appraisal wizard: Step 1 (Company Details) → Step 2 (Data Ingestion) → Step 3 (Run Analysis) → Step 4 (View CAM)
-- Cases list page with status badges and quick-access to CAM
-- CAM viewer page with print/export layout
-- Analytics page with charts (score distribution bar chart, sector pie chart, approval rate gauge)
-- Realistic Indian corporate context: amounts in INR Cr, sectors like Steel/Textile/Pharma/IT/FMCG/Infrastructure
+1. Create `src/frontend/src/pages/Login.tsx` — branded login screen with CreditIQ logo, tagline, and Internet Identity sign-in button. Include loading and error states.
+2. Update `App.tsx` to:
+   a. Wrap the root component in `InternetIdentityProvider`.
+   b. Add an `AuthGate` component that reads `useInternetIdentity` and renders the login page when not authenticated, a spinner while initializing, and the router when authenticated.
+3. Update the `Header` component in `App.tsx` to show a sign-out button and the user principal (shortened).
+4. Add deterministic `data-ocid` markers to all new interactive elements.
